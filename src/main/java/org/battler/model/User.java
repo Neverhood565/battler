@@ -1,4 +1,4 @@
-package com.battler.model;
+package org.battler.model;
 
 import lombok.Data;
 

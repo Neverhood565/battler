@@ -1,4 +1,4 @@
-package com.battler.repository.entity;
+package org.battler.repository.entity;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 

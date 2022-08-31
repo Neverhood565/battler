@@ -1,4 +1,4 @@
-package com.battler.socket;
+package org.battler.socket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vertx.codegen.annotations.Nullable;
@@ -11,6 +11,7 @@ import javax.enterprise.event.Event;
 import javax.websocket.OnClose;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
+import javax.websocket.server.ServerEndpoint;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -23,12 +24,10 @@ public class SocketMessageManager {
     private final ObjectMapper mapper = new ObjectMapper();
     private final Map<String, Session> socketSessions = new ConcurrentHashMap<>();
 
-    @OnOpen
     public void saveSession(Session session) {
         socketSessions.put(session.getId(), session);
     }
 
-    @OnClose
     public void removeSession(Session session) {
         socketSessions.remove(session.getId());
     }
