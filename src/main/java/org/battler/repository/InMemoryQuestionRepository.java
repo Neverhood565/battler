@@ -1,4 +1,4 @@
-package org.battler.service;
+package org.battler.repository;
 
 import org.battler.model.question.Answer;
 import org.battler.model.question.Question;
@@ -6,21 +6,19 @@ import org.battler.model.question.Question;
 import javax.enterprise.context.ApplicationScoped;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 /**
  * Created by romanivanov on 31.08.2022
  */
 @ApplicationScoped
-public class QuestionServiceImpl implements QuestionService {
+public class InMemoryQuestionRepository implements QuestionRepository {
 
-    @Override
-    public List<Question> getQuestions() {
-        return getStubQuestions();
-    }
+    private final List<Question> questions = new ArrayList<>();
 
-    private List<Question> getStubQuestions() {
-        List<Question> questions = new ArrayList<>();
+    {
         questions.add(Question.builder()
                               .id(UUID.randomUUID().toString())
                               .title("А как какать?")
@@ -42,6 +40,24 @@ public class QuestionServiceImpl implements QuestionService {
                                                    .id(UUID.randomUUID().toString())
                                                    .title("Я - джокер")
                                                    .build()).build());
+
+    }
+
+    @Override
+    public List<Question> getNextRandomQuestions(final int amount) {
+        List<Question> result = new ArrayList<>();
+        IntStream.range(0, amount)
+                 .forEach(ignored -> result.add(questions.get(new Random().nextInt(questions.size()))));
+        return result;
+    }
+
+    @Override
+    public void persistQuestion(final Question question) {
+        questions.add(question);
+    }
+
+    @Override
+    public List<Question> findAllQuestions() {
         return questions;
     }
 }

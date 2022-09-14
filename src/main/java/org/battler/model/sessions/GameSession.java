@@ -1,27 +1,36 @@
 package org.battler.model.sessions;
 
-import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.battler.model.User;
+import org.battler.model.question.Question;
 
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
- * Created by romanivanov on 28.08.2022
+ * Created by romanivanov on 10.09.2022
  */
-@Data
-public class GameSession {
+public interface GameSession {
 
-    private final String id = UUID.randomUUID().toString();
-    private final Map<String, PlayerSession> playerSessions = new HashMap<>();
-    private Meeting meeting;
+    String getId();
 
-    public boolean readyToPlay() {
-        return playerSessions.size() == 2;
-    }
+    void joinPlayer(User user, List<Question> questions);
 
-    public void joinPlayer(PlayerSession playerSession) {
-        playerSession.setMeeting(meeting);
-        this.playerSessions.put(playerSession.getCurrentSocketSession(), playerSession);
-    }
+    void answerQuestion(String questionId, Boolean correct);
+
+    void start();
+
+    void abort();
+
+    boolean readyToStart();
+
+    Round getCurrentRound();
+
+    GameState getState();
+
+    Meeting getMeetingInfo();
+
+    List<User> getPlayers();
+
+    User getWinner();
 }
