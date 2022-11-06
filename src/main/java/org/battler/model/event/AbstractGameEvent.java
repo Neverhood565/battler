@@ -1,7 +1,7 @@
 package org.battler.model.event;
 
 import lombok.RequiredArgsConstructor;
-import org.battler.model.sessions.GameSession;
+import org.battler.model.session.GameSession;
 
 /**
  * Created by romanivanov on 14.09.2022

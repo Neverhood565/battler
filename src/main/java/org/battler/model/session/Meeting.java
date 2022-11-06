@@ -1,4 +1,4 @@
-package org.battler.model.sessions;
+package org.battler.model.session;
 
 import lombok.Data;
 

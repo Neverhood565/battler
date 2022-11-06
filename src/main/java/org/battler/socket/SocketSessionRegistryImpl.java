@@ -1,7 +1,7 @@
 package org.battler.socket;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
-import org.postgresql.shaded.com.ongres.scram.common.util.Preconditions;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.websocket.Session;

@@ -1,11 +1,11 @@
 package org.battler.socket;
 
-import org.battler.model.User;
+import org.battler.model.UserId;
 
 /**
  *
  */
 public interface UserEventsEmitter {
 
-    public void emitMessage(Object message, User user);
+    void emitMessage(Object message, UserId userId);
 }

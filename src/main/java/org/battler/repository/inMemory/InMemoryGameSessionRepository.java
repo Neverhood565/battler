@@ -1,26 +1,31 @@
-package org.battler.repository;
+package org.battler.repository.inMemory;
 
-import org.battler.model.sessions.GameSession;
+import io.quarkus.arc.DefaultBean;
+import org.battler.model.UserId;
+import org.battler.model.session.GameSession;
+import org.battler.repository.GameSessionRepository;
+import org.bson.types.ObjectId;
 
 import javax.enterprise.context.ApplicationScoped;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import static java.util.concurrent.CompletableFuture.completedStage;
-import static org.battler.model.sessions.GameState.ACTIVE;
-import static org.battler.model.sessions.GameState.PENDING;
+import static org.battler.model.session.GameSessionState.ACTIVE;
+import static org.battler.model.session.GameSessionState.PENDING;
 
 /**
  * Created by romanivanov on 14.09.2022
  */
+@DefaultBean
 @ApplicationScoped
 public class InMemoryGameSessionRepository implements GameSessionRepository {
 
-    private final Map<String, GameSession> sessions = new ConcurrentHashMap<>();
+    private final Map<ObjectId, GameSession> sessions = new ConcurrentHashMap<>();
 
     @Override
     public CompletionStage<GameSession> findAvailableGameSession() {
@@ -31,11 +36,11 @@ public class InMemoryGameSessionRepository implements GameSessionRepository {
     }
 
     @Override
-    public CompletionStage<GameSession> findActiveGameSessionByUserId(final String userId) {
+    public CompletionStage<GameSession> findActiveGameSessionByUserId(UserId userId) {
         return completedStage(sessions.values().stream()
                                       .filter(gameSession -> ACTIVE.equals(gameSession.getState()) &&
                                               gameSession.getPlayers().stream()
-                                                         .anyMatch(user -> user.getId().equals(userId)))
+                                                         .anyMatch(user -> user.equals(userId)))
                                       .findFirst()
                                       .orElse(null));
     }
@@ -46,8 +51,8 @@ public class InMemoryGameSessionRepository implements GameSessionRepository {
     }
 
     @Override
-    public CompletionStage<Collection<GameSession>> findAllGameSessions() {
-        return completedStage(sessions.values());
+    public CompletionStage<List<GameSession>> findAllGameSessions() {
+        return completedStage(new ArrayList<>(sessions.values()));
     }
 
     @Override

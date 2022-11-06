@@ -1,12 +1,12 @@
 package org.battler.service;
 
-import org.battler.model.User;
+import org.battler.model.UserId;
 import org.battler.model.event.GameCompletedEvent;
 import org.battler.model.event.GameStartedEvent;
 import org.battler.model.event.NewRoundEvent;
-import org.battler.model.sessions.BaseGameSession;
-import org.battler.model.sessions.GameSession;
-import org.battler.model.sessions.Round;
+import org.battler.model.question.Question;
+import org.battler.model.session.GameSession;
+import org.battler.model.session.Round;
 import org.battler.socket.UserEventsEmitter;
 import org.battler.socket.dto.responce.GameCompletedEventDto;
 import org.battler.socket.dto.responce.GameEventDto;
@@ -15,8 +15,8 @@ import org.battler.socket.dto.responce.NewRoundEventDto;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
+import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
-import java.util.stream.Collectors;
 
 /**
  * Created by romanivanov on 10.09.2022
@@ -24,52 +24,59 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class GameToUserEventsDispatcher {
 
-    @Inject UserEventsEmitter userEventsEmitter;
+    @Inject
+    Instance<UserEventsEmitter> emitters;
 
     void onGameStarted(@Observes GameStartedEvent startedEvent) {
         GameSession gameSession = startedEvent.getGameSession();
 
         GameEventDto eventDto = toGameStartedDto(gameSession);
-        gameSession.getPlayers().forEach(player -> userEventsEmitter.emitMessage(eventDto, player));
+        gameSession.getPlayers().forEach(
+                player -> emitters.forEach(emitter -> emitter.emitMessage(eventDto, player))
+        );
     }
 
     void onNextRound(@Observes NewRoundEvent newRoundEvent) {
         GameSession gameSession = newRoundEvent.getGameSession();
         gameSession.getPlayers().forEach(
-                player -> userEventsEmitter.emitMessage(
-                        toNewRoundEventDto(gameSession.getCurrentRound(), player),
-                        player
-                )
+                player -> {
+                    NewRoundEventDto newRoundEventDto = toNewRoundEventDto(gameSession.getCurrentRound(), player);
+                    emitters.forEach(emitter -> emitter.emitMessage(newRoundEventDto, player));
+                }
         );
     }
 
     void onGameCompleted(@Observes GameCompletedEvent gameCompletedEvent) {
         GameSession gameSession = gameCompletedEvent.getGameSession();
         gameSession.getPlayers().forEach(
-                player -> userEventsEmitter.emitMessage(toGameCompletedDto(gameSession, player), player)
+                player -> {
+                    GameCompletedEventDto gameCompletedEventDto = toGameCompletedDto(gameSession, player);
+                    emitters.forEach(emitter -> emitter.emitMessage(gameCompletedEventDto, player));
+                }
         );
     }
 
     private GameStartedEventDto toGameStartedDto(GameSession gameSession) {
         return GameStartedEventDto
                 .builder()
-                .meetingId(gameSession.getMeetingInfo().getId())
-                .roomName(gameSession.getMeetingInfo().getRoomName())
+                .meetingId(gameSession.getMeeting().getId())
+                .roomName(gameSession.getMeeting().getRoomName())
                 .build();
     }
 
-    private NewRoundEventDto toNewRoundEventDto(Round round, User user) {
-        boolean userToAsk = user.getId().equals(round.getPlayerToAsk().getId());
+    private NewRoundEventDto toNewRoundEventDto(Round round, UserId userId) {
+        boolean questioner = userId.equals(round.getQuestioner());
+        Question question = round.getQuestion();
         return NewRoundEventDto.builder()
                                .currentRoundNumber(round.getRoundNumber())
-                               .asking(userToAsk)
-                               .questionId(round.getQuestion().getId())
-                               .questionText(round.getQuestion().getTitle())
-                               .correctAnswer(userToAsk ? round.getQuestion().getCorrectAnswer().getTitle() : null)
+                               .asking(questioner)
+                               .questionId(question.getId())
+                               .questionText(question.getTitle())
+                               .correctAnswer(questioner ? question.getCorrectAnswer() : null)
                                .build();
     }
 
-    private GameCompletedEventDto toGameCompletedDto(GameSession gameSession, User user) {
+    private GameCompletedEventDto toGameCompletedDto(GameSession gameSession, UserId user) {
         return GameCompletedEventDto.builder()
                                     .win(user.equals(gameSession.getWinner())).build();
     }

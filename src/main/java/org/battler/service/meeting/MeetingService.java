@@ -1,6 +1,6 @@
 package org.battler.service.meeting;
 
-import org.battler.model.sessions.Meeting;
+import org.battler.model.session.Meeting;
 
 import java.util.concurrent.CompletionStage;
 

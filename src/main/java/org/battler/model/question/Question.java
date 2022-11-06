@@ -12,5 +12,5 @@ public class Question {
 
     private String id;
     private String title;
-    private Answer correctAnswer;
+    private String correctAnswer;
 }

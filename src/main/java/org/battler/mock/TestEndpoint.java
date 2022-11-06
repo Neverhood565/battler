@@ -1,7 +1,7 @@
 package org.battler.mock;
 
 import org.battler.model.question.Question;
-import org.battler.model.sessions.GameSession;
+import org.battler.model.session.GameSession;
 import org.battler.repository.GameSessionRepository;
 import org.battler.repository.QuestionRepository;
 import org.battler.socket.SocketEndpoint;
@@ -16,7 +16,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import java.util.Collection;
+import javax.ws.rs.QueryParam;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -46,7 +46,7 @@ public class TestEndpoint {
 
     @GET
     @Path("gameSessions")
-    public CompletionStage<Collection<GameSession>> getAllGameSessions() {
+    public CompletionStage<List<GameSession>> getAllGameSessions() {
         return gameSessionRepository.findAllGameSessions();
     }
 
@@ -66,5 +66,11 @@ public class TestEndpoint {
     @Path("/question")
     public List<Question> getQuestions() {
         return questionRepository.findAllQuestions();
+    }
+
+    @GET
+    @Path("/question:random")
+    public CompletionStage<List<Question>> getQuestionsRandom(@QueryParam("amount") Integer amount) {
+        return questionRepository.getNextRandomQuestions(amount);
     }
 }

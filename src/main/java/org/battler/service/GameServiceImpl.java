@@ -1,14 +1,15 @@
 package org.battler.service;
 
+import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import org.battler.model.event.GameCompletedEvent;
 import org.battler.model.event.GameEvent;
 import org.battler.model.event.GameStartedEvent;
-import org.battler.model.User;
+import org.battler.model.UserId;
 import org.battler.model.event.NewRoundEvent;
-import org.battler.model.sessions.BaseGameSession;
-import org.battler.model.sessions.GameSession;
-import org.battler.model.sessions.GameState;
+import org.battler.model.question.Question;
+import org.battler.model.session.GameSession;
+import org.battler.model.session.GameSessionState;
 import org.battler.repository.GameSessionRepository;
 import org.battler.repository.QuestionRepository;
 import org.battler.service.meeting.MeetingService;
@@ -40,54 +41,57 @@ public class GameServiceImpl implements GameService {
     GameSessionRepository gameSessionRepository;
 
     @Override
-    public void findGame(String userId) {
+    public void findGame(UserId user) {
         gameSessionRepository.findAvailableGameSession().thenCompose(gameSession -> {
             if (gameSession == null) {
                 return createNewGameSession();
             }
             return CompletableFuture.completedStage(gameSession);
-        }).thenAccept(gameSession -> {
-            gameSession.joinPlayer(
-                    User.builder().id(userId).build(),
-                    questionRepository.getNextRandomQuestions(NUMBER_OF_ROUNDS / 2)
-            );
-            if (gameSession.readyToStart()) {
+        }).thenAcceptBoth(
+                questionRepository.getNextRandomQuestions(NUMBER_OF_ROUNDS / 2),
+                (gameSession, questions) -> {
+                    gameSession.joinPlayer(user, questions);
+                    if (gameSession.readyToStart()) {
 
-                gameSession.start();
-                gameEvents.fire(new GameStartedEvent(gameSession));
-                gameEvents.fire(new NewRoundEvent(gameSession));
-                log.info("Game session started. Game session ID: {}, User ID: {}", gameSession.getId(), userId);
+                        gameSession.start();
+                        gameEvents.fire(new GameStartedEvent(gameSession));
+                        gameEvents.fire(new NewRoundEvent(gameSession));
+                        log.info("Game session started. Game session ID: {}, User ID: {}", gameSession.getId(), user);
 
-            } else {
-                log.info("Game session pending. Game session ID: {}, User ID: {}", gameSession.getId(), userId);
-            }
-            gameSessionRepository.persistGameSession(gameSession);
-        }).exceptionally(exception -> {
+                    } else {
+                        log.info("Game session pending. Game session ID: {}, User ID: {}", gameSession.getId(), user);
+                    }
+                    gameSessionRepository.persistGameSession(gameSession);
+                }
+        ).exceptionally(exception -> {
             log.error(exception.getMessage(), exception);
             return null;
         });
-
     }
 
     @Override
-    public void answerQuestion(String userId, String questionId, Boolean correct) {
-        gameSessionRepository.findActiveGameSessionByUserId(userId).thenAccept(gameSession -> {
+    public void answerQuestion(UserId user, String questionId, Boolean correct) {
+        gameSessionRepository.findActiveGameSessionByUserId(user).thenAccept(gameSession -> {
+
+            Preconditions.checkNotNull(gameSession, "There is no active game session for user id = %s", user);
+
             gameSession.answerQuestion(
+                    user,
                     questionId,
                     correct
             );
 
-            log.info("Question answered. Game session ID: {}, User ID: {}", gameSession.getId(), userId);
+            log.info("Question answered. Game session ID: {}, User ID: {}", gameSession.getId(), user);
 
-            if (gameSession.getState().equals(GameState.ACTIVE)) {
+            if (gameSession.getState().equals(GameSessionState.ACTIVE)) {
 
                 gameEvents.fire(new NewRoundEvent(gameSession));
-                log.info("New round started. Game session ID: {}, User ID: {}", gameSession.getId(), userId);
+                log.info("New round started. Game session ID: {}, User ID: {}", gameSession.getId(), user);
 
-            } else if (gameSession.getState().equals(GameState.COMPLETED)) {
+            } else if (gameSession.getState().equals(GameSessionState.COMPLETED)) {
 
                 gameEvents.fire(new GameCompletedEvent(gameSession));
-                log.info("Game completed. Game session ID: {}, User ID: {}", gameSession.getId(), userId);
+                log.info("Game completed. Game session ID: {}, User ID: {}", gameSession.getId(), user);
 
             }
             gameSessionRepository.persistGameSession(gameSession);
@@ -98,10 +102,10 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
-    public void leaveGame(final String userId) {
-        gameSessionRepository.findActiveGameSessionByUserId(userId).thenAccept(gameSession -> {
+    public void leaveGame(final UserId user) {
+        gameSessionRepository.findActiveGameSessionByUserId(user).thenAccept(gameSession -> {
             gameSession.abort();
-            log.info("Game aborted. Game session ID: {}, User ID: {}", gameSession.getId(), userId);
+            log.info("Game aborted. Game session ID: {}, User ID: {}", gameSession.getId(), user);
             gameSessionRepository.persistGameSession(gameSession);
         }).exceptionally(exception -> {
             log.error(exception.getMessage(), exception);
@@ -111,6 +115,7 @@ public class GameServiceImpl implements GameService {
 
 
     private CompletionStage<GameSession> createNewGameSession() {
-        return meetingService.createMeeting().thenApply(meeting -> new BaseGameSession(NUMBER_OF_ROUNDS, meeting));
+        return meetingService.createMeeting()
+                             .thenApply(meeting -> GameSession.createNew(NUMBER_OF_ROUNDS, meeting));
     }
 }

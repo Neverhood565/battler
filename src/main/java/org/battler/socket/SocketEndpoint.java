@@ -1,6 +1,7 @@
 package org.battler.socket;
 
 import lombok.extern.slf4j.Slf4j;
+import org.battler.model.UserId;
 import org.battler.service.GameService;
 import org.battler.socket.dto.request.Request;
 import org.battler.socket.dto.responce.ErrorResponse;
@@ -53,13 +54,13 @@ public class SocketEndpoint {
     public void handleRequest(Request request, String userId) {
         switch (request.getEvent()) {
             case FIND_GAME:
-                gameService.findGame(userId);
+                gameService.findGame(new UserId(userId));
                 break;
             case ANSWER_QUESTION:
-                gameService.answerQuestion(userId, request.getQuestionId(), request.getCorrect());
+                gameService.answerQuestion(new UserId(userId), request.getQuestionId(), request.getCorrect());
                 break;
             case LEAVE_GAME:
-                gameService.leaveGame(userId);
+                gameService.leaveGame(new UserId(userId));
                 break;
             default:
                 log.error("Unknown event type: {}", request.getEvent());

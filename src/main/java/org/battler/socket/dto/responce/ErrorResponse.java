@@ -1,6 +1,5 @@
 package org.battler.socket.dto.responce;
 
-import lombok.Builder;
 import lombok.Data;
 
 /**

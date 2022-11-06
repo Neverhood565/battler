@@ -3,7 +3,7 @@ package org.battler.socket;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.battler.model.User;
+import org.battler.model.UserId;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -22,7 +22,7 @@ public class SocketBasedUserEventsEmitter implements UserEventsEmitter {
     SocketSessionRegistry sessionRegistry;
 
     @SneakyThrows
-    public void emitMessage(Object message, User user) {
+    public void emitMessage(Object message, UserId user) {
 
         Session session = sessionRegistry.getSessionByUserId(user.getId());
 

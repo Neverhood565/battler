@@ -1,7 +1,7 @@
 package org.battler.service.meeting;
 
 import lombok.extern.slf4j.Slf4j;
-import org.battler.model.sessions.Meeting;
+import org.battler.model.session.Meeting;
 import org.battler.service.meeting.dto.DyteRequest;
 
 import javax.enterprise.context.ApplicationScoped;

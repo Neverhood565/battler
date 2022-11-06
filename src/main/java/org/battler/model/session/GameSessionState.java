@@ -1,9 +1,9 @@
-package org.battler.model.sessions;
+package org.battler.model.session;
 
 /**
  * Created by romanivanov on 10.09.2022
  */
-public enum GameState {
+public enum GameSessionState {
     PENDING,
     ACTIVE,
     ABORTED,
