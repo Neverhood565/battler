@@ -5,9 +5,11 @@ services:
   mongo:
     image: mongo
     restart: always
-#    environment:
-#      MONGO_INITDB_ROOT_USERNAME: root
-#      MONGO_INITDB_ROOT_PASSWORD: example
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: developer
+      MONGO_INITDB_ROOT_PASSWORD: SbS34nkwZHdmcp
+    volumes:
+      - './data:/data/db'
     ports:
       - "27017:27017"
 
@@ -17,6 +19,8 @@ services:
     ports:
       - "8081:8081"
     environment:
-#      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-#      ME_CONFIG_MONGODB_ADMINPASSWORD: example
-      ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/
+      ME_CONFIG_MONGODB_ADMINUSERNAME: developer
+      ME_CONFIG_MONGODB_ADMINPASSWORD: SbS34nkwZHdmcp
+      ME_CONFIG_BASICAUTH_USERNAME: developer
+      ME_CONFIG_BASICAUTH_PASSWORD: battlerdeveloper
+      ME_CONFIG_MONGODB_URL: mongodb://developer:SbS34nkwZHdmcp@mongo:27017
