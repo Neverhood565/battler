@@ -10,6 +10,7 @@ import org.battler.model.event.NewRoundEvent;
 import org.battler.model.question.Question;
 import org.battler.model.session.GameSession;
 import org.battler.model.session.GameSessionState;
+import org.battler.model.session.QuestionType;
 import org.battler.repository.GameSessionRepository;
 import org.battler.repository.QuestionRepository;
 import org.battler.service.meeting.MeetingService;
@@ -19,6 +20,8 @@ import javax.enterprise.event.Event;
 import javax.inject.Inject;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+
+import static java.util.concurrent.CompletableFuture.completedStage;
 
 /**
  * Created by romanivanov on 28.08.2022
@@ -41,32 +44,59 @@ public class GameServiceImpl implements GameService {
     GameSessionRepository gameSessionRepository;
 
     @Override
-    public void findGame(UserId user) {
-        gameSessionRepository.findAvailableGameSession().thenCompose(gameSession -> {
-            if (gameSession == null) {
-                return createNewGameSession();
-            }
-            return CompletableFuture.completedStage(gameSession);
-        }).thenAcceptBoth(
-                questionRepository.getNextRandomQuestions(NUMBER_OF_ROUNDS / 2),
-                (gameSession, questions) -> {
-                    gameSession.joinPlayer(user, questions);
-                    if (gameSession.readyToStart()) {
+    public void findGame(UserId user, QuestionType questionsType) {
+        gameSessionRepository
+                .findAvailableGameSession(questionsType)
+                .thenCompose(gameSession -> {
+                                 if (gameSession == null) {
+                                     return completedStage(GameSession.createNew(
+                                             NUMBER_OF_ROUNDS,
+                                             questionsType
+                                     ));
+                                 }
+                                 return completedStage(gameSession);
+                             }
+                ).thenCombine(
+                        questionRepository.getNextRandomQuestions(NUMBER_OF_ROUNDS / 2, questionsType),
+                        (gameSession, questions) -> {
+                            gameSession.joinPlayer(user, questions);
+                            return gameSession;
+                        }
+                ).thenCompose(gameSession -> {
+                                  if (gameSession.readyToStart()) {
+                                      return startGame(user, gameSession);
+                                  } else {
+                                      log.info("Game session pending. Game session ID: {}, User ID: {}",
+                                               gameSession.getId(), user
+                                      );
+                                      return completedStage(gameSession);
+                                  }
+                              }
+                ).thenAccept(gameSessionRepository::persistGameSession)
+                .exceptionally(exception ->
+                               {
+                                   log.error(
+                                           exception.getMessage(),
+                                           exception
+                                   );
+                                   return null;
+                               });
+    }
 
-                        gameSession.start();
-                        gameEvents.fire(new GameStartedEvent(gameSession));
-                        gameEvents.fire(new NewRoundEvent(gameSession));
-                        log.info("Game session started. Game session ID: {}, User ID: {}", gameSession.getId(), user);
 
-                    } else {
-                        log.info("Game session pending. Game session ID: {}, User ID: {}", gameSession.getId(), user);
-                    }
-                    gameSessionRepository.persistGameSession(gameSession);
-                }
-        ).exceptionally(exception -> {
-            log.error(exception.getMessage(), exception);
-            return null;
-        });
+    private CompletionStage<GameSession> startGame(final UserId user, final GameSession gameSession) {
+        return meetingService.createMeeting()
+                             .thenApply(meeting -> {
+                                 gameSession.start(meeting);
+                                 gameEvents.fire(new GameStartedEvent(gameSession));
+                                 gameEvents.fire(new NewRoundEvent(gameSession));
+                                 log.info(
+                                         "Game session started. Game session ID: {}, User ID: {}",
+                                         gameSession.getId(),
+                                         user
+                                 );
+                                 return gameSession;
+                             });
     }
 
     @Override
@@ -114,8 +144,8 @@ public class GameServiceImpl implements GameService {
     }
 
 
-    private CompletionStage<GameSession> createNewGameSession() {
+    private CompletionStage<GameSession> createNewGameSession(QuestionType questionsType) {
         return meetingService.createMeeting()
-                             .thenApply(meeting -> GameSession.createNew(NUMBER_OF_ROUNDS, meeting));
+                             .thenApply(meeting -> GameSession.createNew(NUMBER_OF_ROUNDS, questionsType));
     }
 }

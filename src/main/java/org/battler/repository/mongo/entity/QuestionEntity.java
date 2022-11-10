@@ -2,6 +2,7 @@ package org.battler.repository.mongo.entity;
 
 import io.quarkus.mongodb.panache.common.MongoEntity;
 import lombok.Data;
+import org.battler.model.session.QuestionType;
 import org.bson.types.ObjectId;
 
 /**
@@ -14,4 +15,5 @@ public class QuestionEntity {
     private ObjectId id;
     private String title;
     private String correctAnswer;
+    private QuestionType type;
 }

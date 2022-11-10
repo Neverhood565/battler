@@ -1,10 +1,12 @@
 package org.battler.repository.mongo;
 
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
+import io.quarkus.mongodb.panache.reactive.ReactivePanacheQuery;
 import lombok.extern.slf4j.Slf4j;
 import org.battler.model.UserId;
 import org.battler.model.session.GameSession;
 import org.battler.model.session.GameSessionState;
+import org.battler.model.session.QuestionType;
 import org.battler.repository.GameSessionRepository;
 import org.battler.repository.mongo.entity.GameSessionEntity;
 import org.battler.repository.mongo.mapper.GameSessionMapper;
@@ -15,6 +17,8 @@ import javax.inject.Inject;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+
+import static org.battler.model.session.GameSessionState.PENDING;
 
 /**
  * Created by romanivanov on 05.11.2022
@@ -28,11 +32,18 @@ public class MongoGameSessionRepository implements GameSessionRepository,
     GameSessionMapper mapper;
 
     @Override
-    public CompletionStage<GameSession> findAvailableGameSession() {
-        return find("state", GameSessionState.PENDING)
+    public CompletionStage<GameSession> findAvailableGameSession(QuestionType questionsType) {
+        return querySession(questionsType)
                 .firstResult()
                 .map(mapper::toModel)
                 .subscribeAsCompletionStage();
+    }
+
+    private ReactivePanacheQuery<GameSessionEntity> querySession(final QuestionType questionsType) {
+        if (questionsType != null) {
+            return find("state = ?1, type = ?2", PENDING, questionsType);
+        }
+        return find("state = ?1", PENDING);
     }
 
     @Override

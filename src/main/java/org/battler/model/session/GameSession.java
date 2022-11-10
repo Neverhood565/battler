@@ -33,23 +33,25 @@ public class GameSession {
     private final List<UserId> players;
     private final Integer numberOfRounds;
     private final List<Round> rounds;
-    private final Meeting meeting;
     private final Date createDate;
+    private final QuestionType questionType;
+    private Meeting meeting;
     private Date startDate;
     private Integer currentRoundNumber;
     private GameSessionState state;
     private UserId winner;
 
-    public static GameSession createNew(Integer numberOfRounds, Meeting meeting) {
+    public static GameSession createNew(Integer numberOfRounds, QuestionType questionType) {
         return GameSession
                 .builder()
                 .numberOfRounds(numberOfRounds)
-                .meeting(meeting)
+                .meeting(null)
                 .players(new ArrayList<>())
                 .createDate(new Date())
                 .state(PENDING)
                 .id(new ObjectId())
                 .rounds(new ArrayList<>())
+                .questionType(questionType)
                 .build();
     }
 
@@ -86,7 +88,7 @@ public class GameSession {
         players.add(user);
     }
 
-    public void start() {
+    public void start(Meeting meeting) {
         Preconditions.checkState(
                 players.size() == NUMBER_OF_PLAYERS,
                 "Can not start game with amount of players = %s",
@@ -96,6 +98,7 @@ public class GameSession {
         currentRoundNumber = 1;
         state = GameSessionState.ACTIVE;
         startDate = new Date();
+        this.meeting = meeting;
     }
 
     public void answerQuestion(final UserId user, final String questionId, final Boolean correct) {

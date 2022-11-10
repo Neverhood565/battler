@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.battler.model.UserId;
 import org.battler.model.session.GameSessionState;
+import org.battler.model.session.QuestionType;
 
 import java.util.Date;
 import java.util.List;
@@ -27,4 +28,5 @@ public class GameSessionEntity extends PanacheMongoEntity {
     private UserId winner;
     private Date createDate;
     private Date startDate;
+    private QuestionType questionType;
 }

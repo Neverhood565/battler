@@ -2,6 +2,7 @@ package org.battler.socket;
 
 import lombok.extern.slf4j.Slf4j;
 import org.battler.model.UserId;
+import org.battler.model.session.QuestionType;
 import org.battler.service.GameService;
 import org.battler.socket.dto.request.Request;
 import org.battler.socket.dto.responce.ErrorResponse;
@@ -15,6 +16,8 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
+
+import java.util.Optional;
 
 import static org.battler.socket.dto.request.Request.ANSWER_QUESTION;
 import static org.battler.socket.dto.request.Request.FIND_GAME;
@@ -54,7 +57,10 @@ public class SocketEndpoint {
     public void handleRequest(Request request, String userId) {
         switch (request.getEvent()) {
             case FIND_GAME:
-                gameService.findGame(new UserId(userId));
+                gameService.findGame(
+                        new UserId(userId),
+                        Optional.ofNullable(request.getQuestionsType()).map(QuestionType::of).orElse(null)
+                );
                 break;
             case ANSWER_QUESTION:
                 gameService.answerQuestion(new UserId(userId), request.getQuestionId(), request.getCorrect());

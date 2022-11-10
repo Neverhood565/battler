@@ -2,6 +2,7 @@ package org.battler.mock;
 
 import org.battler.model.question.Question;
 import org.battler.model.session.GameSession;
+import org.battler.model.session.QuestionType;
 import org.battler.repository.GameSessionRepository;
 import org.battler.repository.QuestionRepository;
 import org.battler.socket.SocketEndpoint;
@@ -70,7 +71,7 @@ public class TestEndpoint {
 
     @GET
     @Path("/question:random")
-    public CompletionStage<List<Question>> getQuestionsRandom(@QueryParam("amount") Integer amount) {
-        return questionRepository.getNextRandomQuestions(amount);
+    public CompletionStage<List<Question>> getQuestionsRandom(@QueryParam("amount") Integer amount, @QueryParam("type") String type) {
+        return questionRepository.getNextRandomQuestions(amount, QuestionType.of(type));
     }
 }

@@ -15,4 +15,5 @@ public class Request {
     private String event;
     private Boolean correct;
     private String questionId;
+    private String questionsType;
 }

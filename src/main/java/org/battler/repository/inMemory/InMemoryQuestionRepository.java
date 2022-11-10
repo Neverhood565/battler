@@ -2,6 +2,7 @@ package org.battler.repository.inMemory;
 
 import io.quarkus.arc.DefaultBean;
 import org.battler.model.question.Question;
+import org.battler.model.session.QuestionType;
 import org.battler.repository.QuestionRepository;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -39,7 +40,7 @@ public class InMemoryQuestionRepository implements QuestionRepository {
     }
 
     @Override
-    public CompletionStage<List<Question>> getNextRandomQuestions(final int amount) {
+    public CompletionStage<List<Question>> getNextRandomQuestions(final int amount, QuestionType questionType) {
         return CompletableFuture.supplyAsync(() -> {
             List<Question> result = new ArrayList<>();
             IntStream.range(0, amount)
