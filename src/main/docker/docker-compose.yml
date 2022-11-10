@@ -12,6 +12,8 @@ services:
       - './data:/data/db'
     ports:
       - "27017:27017"
+    networks:
+      - mongo
 
   mongo-express:
     image: mongo-express
@@ -24,3 +26,8 @@ services:
       ME_CONFIG_BASICAUTH_USERNAME: developer
       ME_CONFIG_BASICAUTH_PASSWORD: battlerdeveloper
       ME_CONFIG_MONGODB_URL: mongodb://developer:SbS34nkwZHdmcp@mongo:27017
+    networks:
+      - mongo
+networks:
+  mongo:
+    driver: bridge

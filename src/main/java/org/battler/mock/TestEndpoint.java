@@ -58,8 +58,8 @@ public class TestEndpoint {
 
     @POST
     @Path("/question")
-    public void saveQuestion(Question question) {
-        questionRepository.persistQuestion(question);
+    public void saveQuestions(List<Question> questions) {
+        questions.forEach(questionRepository::persistQuestion);
     }
 
     @GET

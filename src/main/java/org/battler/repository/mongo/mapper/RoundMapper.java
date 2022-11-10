@@ -7,7 +7,7 @@ import org.mapstruct.Mapper;
 /**
  * Created by romanivanov on 06.11.2022
  */
-@Mapper(componentModel = "cdi")
+@Mapper(componentModel = "cdi", uses = QuestionMapper.class)
 public interface RoundMapper {
 
     RoundEntity toEntity(Round round);
