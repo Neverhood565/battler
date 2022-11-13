@@ -6,22 +6,26 @@ import org.battler.model.event.GameCompletedEvent;
 import org.battler.model.event.GameEvent;
 import org.battler.model.event.GameStartedEvent;
 import org.battler.model.UserId;
+import org.battler.model.event.LookingForGameEvent;
 import org.battler.model.event.NewRoundEvent;
-import org.battler.model.question.Question;
+import org.battler.model.event.RejoinGameEvent;
+import org.battler.model.event.UserLeftGameEvent;
 import org.battler.model.session.GameSession;
 import org.battler.model.session.GameSessionState;
 import org.battler.model.session.QuestionType;
 import org.battler.repository.GameSessionRepository;
 import org.battler.repository.QuestionRepository;
 import org.battler.service.meeting.MeetingService;
+import org.battler.socket.UserEventsEmitter;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
+import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import static java.util.concurrent.CompletableFuture.completedStage;
+import static org.battler.model.session.GameSessionState.ACTIVE;
 
 /**
  * Created by romanivanov on 28.08.2022
@@ -46,7 +50,7 @@ public class GameServiceImpl implements GameService {
     @Override
     public void findGame(UserId user, QuestionType questionsType) {
         gameSessionRepository
-                .findAvailableGameSession(questionsType)
+                .findPendingGameSessionByQuestionType(questionsType)
                 .thenCompose(gameSession -> {
                                  if (gameSession == null) {
                                      return completedStage(GameSession.createNew(
@@ -69,6 +73,7 @@ public class GameServiceImpl implements GameService {
                                       log.info("Game session pending. Game session ID: {}, User ID: {}",
                                                gameSession.getId(), user
                                       );
+                                      gameEvents.fire(new LookingForGameEvent(gameSession));
                                       return completedStage(gameSession);
                                   }
                               }
@@ -101,7 +106,7 @@ public class GameServiceImpl implements GameService {
 
     @Override
     public void answerQuestion(UserId user, String questionId, Boolean correct) {
-        gameSessionRepository.findActiveGameSessionByUserId(user).thenAccept(gameSession -> {
+        gameSessionRepository.findGameSessionByUserIdAndState(user, ACTIVE).thenAccept(gameSession -> {
 
             Preconditions.checkNotNull(gameSession, "There is no active game session for user id = %s", user);
 
@@ -113,7 +118,7 @@ public class GameServiceImpl implements GameService {
 
             log.info("Question answered. Game session ID: {}, User ID: {}", gameSession.getId(), user);
 
-            if (gameSession.getState().equals(GameSessionState.ACTIVE)) {
+            if (gameSession.getState().equals(ACTIVE)) {
 
                 gameEvents.fire(new NewRoundEvent(gameSession));
                 log.info("New round started. Game session ID: {}, User ID: {}", gameSession.getId(), user);
@@ -133,7 +138,8 @@ public class GameServiceImpl implements GameService {
 
     @Override
     public void leaveGame(final UserId user) {
-        gameSessionRepository.findActiveGameSessionByUserId(user).thenAccept(gameSession -> {
+        gameSessionRepository.findGameSessionByUserIdAndState(user, ACTIVE).thenAccept(gameSession -> {
+            Preconditions.checkNotNull(gameSession, "There is no active game sessions to abort. For user = %s", user);
             gameSession.abort();
             log.info("Game aborted. Game session ID: {}, User ID: {}", gameSession.getId(), user);
             gameSessionRepository.persistGameSession(gameSession);
@@ -143,9 +149,28 @@ public class GameServiceImpl implements GameService {
         });
     }
 
+    @Override
+    public void rejoinGame(final UserId user) {
+        gameSessionRepository.findGameSessionByUserIdAndState(user, ACTIVE).thenAccept(gameSession -> {
+            log.info(
+                    "Active game session found. Send rejoin events. User = {}. Game session id = {}",
+                    user,
+                    gameSession.getId()
+            );
+            gameEvents.fire(new RejoinGameEvent(gameSession));
+            gameEvents.fire(new NewRoundEvent(gameSession));
+        });
+    }
 
-    private CompletionStage<GameSession> createNewGameSession(QuestionType questionsType) {
-        return meetingService.createMeeting()
-                             .thenApply(meeting -> GameSession.createNew(NUMBER_OF_ROUNDS, questionsType));
+    @Override
+    public void userLeft(final UserId user) {
+        gameSessionRepository.findGameSessionByUserIdAndState(user, ACTIVE).thenAccept(gameSession -> {
+            log.info(
+                    "User leaving active game session. Userid = {}. Game session id = {}",
+                    user,
+                    gameSession.getId()
+            );
+            gameEvents.fire(new UserLeftGameEvent(gameSession, user));
+        });
     }
 }

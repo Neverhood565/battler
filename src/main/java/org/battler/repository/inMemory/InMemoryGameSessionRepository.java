@@ -3,6 +3,7 @@ package org.battler.repository.inMemory;
 import io.quarkus.arc.DefaultBean;
 import org.battler.model.UserId;
 import org.battler.model.session.GameSession;
+import org.battler.model.session.GameSessionState;
 import org.battler.model.session.QuestionType;
 import org.battler.repository.GameSessionRepository;
 import org.bson.types.ObjectId;
@@ -29,7 +30,7 @@ public class InMemoryGameSessionRepository implements GameSessionRepository {
     private final Map<ObjectId, GameSession> sessions = new ConcurrentHashMap<>();
 
     @Override
-    public CompletionStage<GameSession> findAvailableGameSession(QuestionType questionType) {
+    public CompletionStage<GameSession> findPendingGameSessionByQuestionType(QuestionType questionType) {
         return completedStage(sessions.values().stream()
                                       .filter(gameSession -> gameSession.getState().equals(PENDING))
                                       .findFirst()
@@ -37,7 +38,7 @@ public class InMemoryGameSessionRepository implements GameSessionRepository {
     }
 
     @Override
-    public CompletionStage<GameSession> findActiveGameSessionByUserId(UserId userId) {
+    public CompletionStage<GameSession> findGameSessionByUserIdAndState(UserId userId, GameSessionState state) {
         return completedStage(sessions.values().stream()
                                       .filter(gameSession -> ACTIVE.equals(gameSession.getState()) &&
                                               gameSession.getPlayers().stream()

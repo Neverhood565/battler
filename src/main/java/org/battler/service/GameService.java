@@ -13,4 +13,8 @@ public interface GameService {
     void answerQuestion(UserId user, String questionId, Boolean correct);
 
     void leaveGame(UserId user);
+
+    void rejoinGame(UserId user);
+
+    void userLeft(UserId user);
 }

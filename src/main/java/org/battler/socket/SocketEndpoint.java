@@ -28,7 +28,7 @@ import static org.battler.socket.dto.request.Request.LEAVE_GAME;
  */
 @Slf4j
 @ApplicationScoped
-@ServerEndpoint("/battler")
+@ServerEndpoint("/battler/{token}")
 public class SocketEndpoint {
 
     @Inject
@@ -78,13 +78,15 @@ public class SocketEndpoint {
     public void onClose(Session session) {
         String userId = socketSessionRegistry.getUserIdBySessionId(session.getId());
         log.info("Socket session closed. Session ID {}, userid {}", session.getId(), userId);
+        gameService.userLeft(new UserId(userId));
         socketSessionRegistry.removeSession(session.getId());
     }
 
     @OnOpen
-    public void saveSession(Session session, @PathParam("token") String userId) {
-        log.info("Socket session opened. Session ID {}, userid {}", session.getId(), userId);
+    public void saveSession(Session session, @PathParam("token") String user) {
+        log.info("Socket session opened. Session ID {}, user {}", session.getId(), user);
         //TODO: тут необходимо принимать jwt токен с данными пользователя. Временно просто принимаем ID
-        socketSessionRegistry.registerSession(session, session.getId());
+        socketSessionRegistry.registerSession(session, Optional.ofNullable(user).orElse(session.getId()));
+        gameService.rejoinGame(new UserId(user));
     }
 }

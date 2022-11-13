@@ -2,9 +2,9 @@ package org.battler.repository;
 
 import org.battler.model.UserId;
 import org.battler.model.session.GameSession;
+import org.battler.model.session.GameSessionState;
 import org.battler.model.session.QuestionType;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -13,9 +13,9 @@ import java.util.concurrent.CompletionStage;
  */
 public interface GameSessionRepository {
 
-    CompletionStage<GameSession> findAvailableGameSession(QuestionType questionsType);
+    CompletionStage<GameSession> findPendingGameSessionByQuestionType(QuestionType questionsType);
 
-    CompletionStage<GameSession> findActiveGameSessionByUserId(UserId userId);
+    CompletionStage<GameSession> findGameSessionByUserIdAndState(UserId userId, GameSessionState state);
 
     void persistGameSession(GameSession session);
 
